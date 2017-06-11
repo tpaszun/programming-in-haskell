@@ -164,3 +164,24 @@ main = hspec $ do
                   (Num 3))))
             (Primitive
               (Num 4))))
+    it "should parse \"1+(-1)\"" $ do
+      let tree = eval "1+(-1)"
+      putStrLn $ drawVerticalTree $ exprToTreeFull $ tree
+      putStrLn $ drawVerticalTree $ exprToTree $ tree
+      tree `shouldBe`
+        (Sum
+          (Term
+            (Factor
+              (Primitive
+                (Num 1))))
+          (Factor
+            (Primitive
+              (Expression
+                (Term
+                  (Factor
+                    (Primitive
+                      (Negation
+                        (Term
+                          (Factor
+                            (Primitive
+                              (Num 1))))))))))))

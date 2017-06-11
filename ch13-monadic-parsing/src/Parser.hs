@@ -173,21 +173,25 @@ term' t =
 
 factor :: Parser Factor
 factor =
-  do e <- expnent
+  do e <- primitive
      do symbol "^"
         f <- factor
         return (Power e f )
       <|> return (Primitive e)
 
-expnent :: Parser Primitive
-expnent =
-  do n <- integer
-     return (Num n)
-    <|>
-    do symbol "("
-       e <- expr
-       symbol ")"
-       return (Expression e)
+primitive :: Parser Primitive
+primitive =
+  do symbol "-"
+     e <- expr
+     return (Negation e)
+   <|>
+    do n <- integer
+       return (Num n)
+     <|>
+      do symbol "("
+         e <- expr
+         symbol ")"
+         return (Expression e)
 
 
 
@@ -212,8 +216,9 @@ data Factor = Primitive Primitive
             deriving (Show, Eq)
 
 data Primitive = Num Int
-              | Expression Expr
-              deriving (Show, Eq)
+               | Negation Expr
+               | Expression Expr
+               deriving (Show, Eq)
 
 
 exprToTreeFull :: Expr -> Tree String
@@ -232,6 +237,7 @@ factorToTreeFull (Power e f) = Node "factor" [Node "^" [primitiveToTreeFull e, f
 
 primitiveToTreeFull :: Primitive -> Tree String
 primitiveToTreeFull (Num n) = Node "primitive" [Node (show n) []]
+primitiveToTreeFull (Negation e) = Node "primitive" [Node "-" [exprToTreeFull e]]
 primitiveToTreeFull (Expression e) = Node "primitive" [exprToTreeFull e]
 
 
@@ -251,6 +257,7 @@ factorToTree (Power e f) = Node "^" [primitiveToTree e, factorToTree f]
 
 primitiveToTree :: Primitive -> Tree String
 primitiveToTree (Num n) = Node (show n) []
+primitiveToTree (Negation e) = Node "-" [exprToTree e]
 primitiveToTree (Expression e) = exprToTree e
 
 
