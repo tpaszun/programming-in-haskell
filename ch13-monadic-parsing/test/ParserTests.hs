@@ -11,156 +11,156 @@ main = hspec $ do
   describe "Parser" $ do
     it "should parse \"1+2+3\"" $ do
       let tree = eval "1+2+3"
+      putStrLn $ drawVerticalTree $ exprToTreeFull $ tree
       putStrLn $ drawVerticalTree $ exprToTree $ tree
-      putStrLn $ drawVerticalTree $ exprToTree' $ tree
       tree `shouldBe`
-        (ESum
-          (ESum
-            (ETerm
-              (TFactor
-                (FExp
+        (Sum
+          (Sum
+            (Term
+              (Factor
+                (Primitive
                   (Num 1))))
-            (TFactor
-              (FExp
+            (Factor
+              (Primitive
                 (Num 2))))
-          (TFactor
-            (FExp
+          (Factor
+            (Primitive
               (Num 3))))
     it "should parse \"1-2-3\"" $ do
       let tree = eval "1-2-3"
+      putStrLn $ drawVerticalTree $ exprToTreeFull $ tree
       putStrLn $ drawVerticalTree $ exprToTree $ tree
-      putStrLn $ drawVerticalTree $ exprToTree' $ tree
       tree `shouldBe`
-        (EDif
-          (EDif
-            (ETerm
-              (TFactor
-                (FExp
+        (Difference
+          (Difference
+            (Term
+              (Factor
+                (Primitive
                   (Num 1))))
-            (TFactor
-              (FExp
+            (Factor
+              (Primitive
                 (Num 2))))
-          (TFactor
-            (FExp
+          (Factor
+            (Primitive
               (Num 3))))
     it "should parse \"1-2+3\"" $ do
       let tree = eval "1-2+3"
+      putStrLn $ drawVerticalTree $ exprToTreeFull $ tree
       putStrLn $ drawVerticalTree $ exprToTree $ tree
-      putStrLn $ drawVerticalTree $ exprToTree' $ tree
       tree `shouldBe`
-        (ESum
-          (EDif
-            (ETerm
-              (TFactor
-                (FExp
+        (Sum
+          (Difference
+            (Term
+              (Factor
+                (Primitive
                   (Num 1))))
-            (TFactor
-              (FExp
+            (Factor
+              (Primitive
                 (Num 2))))
-          (TFactor
-            (FExp
+          (Factor
+            (Primitive
               (Num 3))))
     it "should parse \"1+2-3\"" $ do
       let tree = eval "1+2-3"
+      putStrLn $ drawVerticalTree $ exprToTreeFull $ tree
       putStrLn $ drawVerticalTree $ exprToTree $ tree
-      putStrLn $ drawVerticalTree $ exprToTree' $ tree
       tree `shouldBe`
-        (EDif
-          (ESum
-            (ETerm
-              (TFactor
-                (FExp
+        (Difference
+          (Sum
+            (Term
+              (Factor
+                (Primitive
                   (Num 1))))
-            (TFactor
-              (FExp
+            (Factor
+              (Primitive
                 (Num 2))))
-          (TFactor
-            (FExp
+          (Factor
+            (Primitive
               (Num 3))))
     it "should parse \"1-(2*3)-4\"" $ do
       let tree = eval "1-(2*3)-4"
+      putStrLn $ drawVerticalTree $ exprToTreeFull $ tree
       putStrLn $ drawVerticalTree $ exprToTree $ tree
-      putStrLn $ drawVerticalTree $ exprToTree' $ tree
       tree `shouldBe`
-        (EDif
-          (EDif
-            (ETerm
-              (TFactor
-                (FExp
+        (Difference
+          (Difference
+            (Term
+              (Factor
+                (Primitive
                   (Num 1))))
-            (TFactor
-              (FExp
-                (EExpr
-                  (ETerm
-                    (TMul
-                      (TFactor
-                        (FExp
+            (Factor
+              (Primitive
+                (Expression
+                  (Term
+                    (Product
+                      (Factor
+                        (Primitive
                           (Num 2)))
-                      (FExp
+                      (Primitive
                         (Num 3))))))))
-          (TFactor
-            (FExp
+          (Factor
+            (Primitive
               (Num 4))))
     it "should parse \"1/2/3\"" $ do
       let tree = eval "1/2/3"
+      putStrLn $ drawVerticalTree $ exprToTreeFull $ tree
       putStrLn $ drawVerticalTree $ exprToTree $ tree
-      putStrLn $ drawVerticalTree $ exprToTree' $ tree
       tree `shouldBe`
-        (ETerm
-          (TDiv
-            (TDiv
-              (TFactor
-                (FExp
+        (Term
+          (Quotient
+            (Quotient
+              (Factor
+                (Primitive
                   (Num 1)))
-              (FExp
+              (Primitive
                 (Num 2)))
-            (FExp
+            (Primitive
               (Num 3))))
     it "should parse \"1^2^3\"" $ do
       let tree = eval "1^2^3"
+      putStrLn $ drawVerticalTree $ exprToTreeFull $ tree
       putStrLn $ drawVerticalTree $ exprToTree $ tree
-      putStrLn $ drawVerticalTree $ exprToTree' $ tree
       tree `shouldBe`
-        (ETerm
-          (TFactor
-            (FExpo
+        (Term
+          (Factor
+            (Power
               (Num 1)
-              (FExpo
+              (Power
                 (Num 2)
-                (FExp
+                (Primitive
                   (Num 3))))))
     it "should parse \"1^(2+3)^4\"" $ do
       let tree = eval "1^(2+3)^4"
+      putStrLn $ drawVerticalTree $ exprToTreeFull $ tree
       putStrLn $ drawVerticalTree $ exprToTree $ tree
-      putStrLn $ drawVerticalTree $ exprToTree' $ tree
       tree `shouldBe`
-        (ETerm
-          (TFactor
-            (FExpo
+        (Term
+          (Factor
+            (Power
               (Num 1)
-              (FExpo
-                (EExpr
-                  (ESum
-                    (ETerm
-                      (TFactor
-                        (FExp
+              (Power
+                (Expression
+                  (Sum
+                    (Term
+                      (Factor
+                        (Primitive
                           (Num 2))))
-                    (TFactor
-                      (FExp
+                    (Factor
+                      (Primitive
                         (Num 3)))))
-                (FExp
+                (Primitive
                   (Num 4))))))
     it "should parse \"2^3*4\"" $ do
       let tree = eval "2^3*4"
+      putStrLn $ drawVerticalTree $ exprToTreeFull $ tree
       putStrLn $ drawVerticalTree $ exprToTree $ tree
-      putStrLn $ drawVerticalTree $ exprToTree' $ tree
       tree `shouldBe`
-        (ETerm
-          (TMul
-            (TFactor
-              (FExpo
+        (Term
+          (Product
+            (Factor
+              (Power
                 (Num 2)
-                (FExp
+                (Primitive
                   (Num 3))))
-            (FExp
+            (Primitive
               (Num 4))))

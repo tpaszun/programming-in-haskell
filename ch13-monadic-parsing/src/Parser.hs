@@ -139,35 +139,35 @@ list = do symbol "["
 expr :: Parser Expr
 expr =
   do t <- term
-     e <- expr' (ETerm t)
+     e <- expr' (Term t)
      return e
 
 expr' :: Expr -> Parser Expr
 expr' e =
   do symbol "+"
      t <- term
-     expr' (ESum e t)
+     expr' (Sum e t)
    <|>
      do symbol "-"
         t <- term
-        expr' (EDif e t)
+        expr' (Difference e t)
    <|> return e
 
 term :: Parser Term
 term =
   do f <- factor
-     t <- term' (TFactor f)
+     t <- term' (Factor f)
      return t
 
 term' :: Term -> Parser Term
 term' t =
   do symbol "*"
      f <- factor
-     term' (TMul t f)
+     term' (Product t f)
    <|>
      do symbol "/"
         f <- factor
-        term' (TDiv t f)
+        term' (Quotient t f)
    <|> return t
 
 
@@ -176,10 +176,10 @@ factor =
   do e <- expnent
      do symbol "^"
         f <- factor
-        return (FExpo e f )
-      <|> return (FExp e)
+        return (Power e f )
+      <|> return (Primitive e)
 
-expnent :: Parser Exponent
+expnent :: Parser Primitive
 expnent =
   do n <- integer
      return (Num n)
@@ -187,7 +187,7 @@ expnent =
     do symbol "("
        e <- expr
        symbol ")"
-       return (EExpr e)
+       return (Expression e)
 
 
 
@@ -197,60 +197,60 @@ eval input = case parse expr input of
                [(_,out)] -> error ("Unused input: " ++ out)
                [] -> error "Invalid input"
 
-data Expr = ETerm Term
-          | ESum Expr Term
-          | EDif Expr Term
+data Expr = Term Term
+          | Sum Expr Term
+          | Difference Expr Term
           deriving (Show, Eq)
 
-data Term = TFactor Factor
-          | TMul Term Factor
-          | TDiv Term Factor
+data Term = Factor Factor
+          | Product Term Factor
+          | Quotient Term Factor
           deriving (Show, Eq)
 
-data Factor = FExp Exponent
-            | FExpo Exponent Factor
+data Factor = Primitive Primitive
+            | Power Primitive Factor
             deriving (Show, Eq)
 
-data Exponent = Num Int
-              | EExpr Expr
+data Primitive = Num Int
+              | Expression Expr
               deriving (Show, Eq)
 
 
+exprToTreeFull :: Expr -> Tree String
+exprToTreeFull (Term t) = Node "expr" [termToTreeFull t]
+exprToTreeFull (Sum e t) = Node "expr" [Node "+" [exprToTreeFull e, termToTreeFull t]]
+exprToTreeFull (Difference e t) = Node "expr" [Node "-" [exprToTreeFull e, termToTreeFull t]]
+
+termToTreeFull :: Term -> Tree String
+termToTreeFull (Factor f) = Node "term" [factorToTreeFull f]
+termToTreeFull (Product t f) = Node "term" [Node "*" [termToTreeFull t, factorToTreeFull f]]
+termToTreeFull (Quotient t f) = Node "term" [Node "/" [termToTreeFull t, factorToTreeFull f]]
+
+factorToTreeFull :: Factor -> Tree String
+factorToTreeFull (Primitive e) = Node "factor" [primitiveToTreeFull e]
+factorToTreeFull (Power e f) = Node "factor" [Node "^" [primitiveToTreeFull e, factorToTreeFull f]]
+
+primitiveToTreeFull :: Primitive -> Tree String
+primitiveToTreeFull (Num n) = Node "primitive" [Node (show n) []]
+primitiveToTreeFull (Expression e) = Node "primitive" [exprToTreeFull e]
+
+
 exprToTree :: Expr -> Tree String
-exprToTree (ETerm t) = Node "expr" [termToTree t]
-exprToTree (ESum e t) = Node "expr" [Node "+" [exprToTree e, termToTree t]]
-exprToTree (EDif e t) = Node "expr" [Node "-" [exprToTree e, termToTree t]]
+exprToTree (Term t) = termToTree t
+exprToTree (Sum e t) = Node "+" [exprToTree e, termToTree t]
+exprToTree (Difference e t) = Node "-" [exprToTree e, termToTree t]
 
 termToTree :: Term -> Tree String
-termToTree (TFactor f) = Node "term" [factorToTree f]
-termToTree (TMul t f) = Node "term" [Node "*" [termToTree t, factorToTree f]]
-termToTree (TDiv t f) = Node "term" [Node "/" [termToTree t, factorToTree f]]
+termToTree (Factor f) = factorToTree f
+termToTree (Product t f) = Node "*" [termToTree t, factorToTree f]
+termToTree (Quotient t f) = Node "/" [termToTree t, factorToTree f]
 
 factorToTree :: Factor -> Tree String
-factorToTree (FExp e) = Node "factor" [exponentToTree e]
-factorToTree (FExpo e f) = Node "factor" [Node "^" [exponentToTree e, factorToTree f]]
+factorToTree (Primitive e) = primitiveToTree e
+factorToTree (Power e f) = Node "^" [primitiveToTree e, factorToTree f]
 
-exponentToTree :: Exponent -> Tree String
-exponentToTree (Num n) = Node "exp" [Node (show n) []]
-exponentToTree (EExpr e) = Node "exp" [exprToTree e]
-
-
-exprToTree' :: Expr -> Tree String
-exprToTree' (ETerm t) = termToTree' t
-exprToTree' (ESum e t) = Node "+" [exprToTree' e, termToTree' t]
-exprToTree' (EDif e t) = Node "-" [exprToTree' e, termToTree' t]
-
-termToTree' :: Term -> Tree String
-termToTree' (TFactor f) = factorToTree' f
-termToTree' (TMul t f) = Node "*" [termToTree' t, factorToTree' f]
-termToTree' (TDiv t f) = Node "/" [termToTree' t, factorToTree' f]
-
-factorToTree' :: Factor -> Tree String
-factorToTree' (FExp e) = exponentToTree' e
-factorToTree' (FExpo e f) = Node "^" [exponentToTree' e, factorToTree' f]
-
-exponentToTree' :: Exponent -> Tree String
-exponentToTree' (Num n) = Node (show n) []
-exponentToTree' (EExpr e) = exprToTree' e
+primitiveToTree :: Primitive -> Tree String
+primitiveToTree (Num n) = Node (show n) []
+primitiveToTree (Expression e) = exprToTree e
 
 
