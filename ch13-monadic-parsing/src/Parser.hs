@@ -135,41 +135,53 @@ list = do symbol "["
           symbol "]"
           return xs
 
+--------------------
+-- Expression parser
+--------------------
+
+data ExprOperator = Plus | Minus
 
 expr :: Parser Expr
 expr =
   do t <- term
-     e <- expr' (Term t)
-     return e
+     ts <- many exprRest
+     return $ foldl (\acc (operator, ter) -> case operator of
+                                               Minus -> Difference acc ter
+                                               Plus  -> Sum acc ter
+                    ) (Term t) ts
 
-expr' :: Expr -> Parser Expr
-expr' e =
+exprRest :: Parser (ExprOperator, Term)
+exprRest =
   do symbol "+"
      t <- term
-     expr' (Sum e t)
+     return (Plus, t)
    <|>
      do symbol "-"
         t <- term
-        expr' (Difference e t)
-   <|> return e
+        return (Minus, t)
+   <|> empty
+
+data TermOperator = Multiply | Divide
 
 term :: Parser Term
 term =
   do f <- factor
-     t <- term' (Factor f)
-     return t
+     fs <- many termRest
+     return $ foldl (\acc (operator, fac) -> case operator of
+                                               Multiply -> Product acc fac
+                                               Divide   -> Quotient acc fac
+                    ) (Factor f) fs
 
-term' :: Term -> Parser Term
-term' t =
+termRest :: Parser (TermOperator, Factor)
+termRest =
   do symbol "*"
      f <- factor
-     term' (Product t f)
+     return (Multiply, f)
    <|>
      do symbol "/"
         f <- factor
-        term' (Quotient t f)
-   <|> return t
-
+        return (Divide, f)
+   <|> empty
 
 factor :: Parser Factor
 factor =
@@ -201,6 +213,10 @@ eval input = case parse expr input of
                [(_,out)] -> error ("Unused input: " ++ out)
                [] -> error "Invalid input"
 
+------------------
+-- Expression tree
+------------------
+
 data Expr = Term Term
           | Sum Expr Term
           | Difference Expr Term
@@ -220,6 +236,9 @@ data Primitive = Num Int
                | Expression Expr
                deriving (Show, Eq)
 
+-------------------
+-- Printing helpers
+-------------------
 
 exprToTreeFull :: Expr -> Tree String
 exprToTreeFull (Term t) = Node "expr" [termToTreeFull t]
