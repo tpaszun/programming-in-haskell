@@ -49,6 +49,9 @@ instance Alternative Parser where
   l <|> r = P (\input -> case parse l input of
                            [] -> parse r input
                            [(x, rest)] -> [(x, rest)])
+-- auto:
+-- many
+-- some
 
 
 sat :: (Char -> Bool) -> Parser Char
@@ -136,26 +139,37 @@ list = do symbol "["
 expr :: Parser Expr
 expr =
   do t <- term
-     do symbol "+"
-        e <- expr
-        return (ESum t e)
-      <|>
-       do symbol "-"
-          e <- expr
-          return (EDif t e)
-        <|> return (ETerm t)
+     e <- expr' (ETerm t)
+     return e
+
+expr' :: Expr -> Parser Expr
+expr' e =
+  do symbol "+"
+     t <- term
+     expr' (ESum e t)
+   <|>
+     do symbol "-"
+        t <- term
+        expr' (EDif e t)
+   <|> return e
 
 term :: Parser Term
 term =
   do f <- factor
-     do symbol "*"
-        t <- term
-        return (TMul f t)
-      <|>
-       do symbol "/"
-          t <- term
-          return (TDiv f t)
-        <|> return (TFactor f)
+     t <- term' (TFactor f)
+     return t
+
+term' :: Term -> Parser Term
+term' t =
+  do symbol "*"
+     f <- factor
+     term' (TMul t f)
+   <|>
+     do symbol "/"
+        f <- factor
+        term' (TDiv t f)
+   <|> return t
+
 
 factor :: Parser Factor
 factor =
@@ -183,35 +197,34 @@ eval input = case parse expr input of
                [(_,out)] -> error ("Unused input: " ++ out)
                [] -> error "Invalid input"
 
-
 data Expr = ETerm Term
-          | ESum Term Expr
-          | EDif Term Expr
-          deriving Show
+          | ESum Expr Term
+          | EDif Expr Term
+          deriving (Show, Eq)
 
 data Term = TFactor Factor
-          | TMul Factor Term
-          | TDiv Factor Term
-          deriving Show
+          | TMul Term Factor
+          | TDiv Term Factor
+          deriving (Show, Eq)
 
 data Factor = FExp Exponent
             | FExpo Exponent Factor
-            deriving Show
+            deriving (Show, Eq)
 
 data Exponent = Num Int
               | EExpr Expr
-              deriving Show
+              deriving (Show, Eq)
 
 
 exprToTree :: Expr -> Tree String
 exprToTree (ETerm t) = Node "expr" [termToTree t]
-exprToTree (ESum t e) = Node "expr" [Node "+" [termToTree t, exprToTree e]]
-exprToTree (EDif t e) = Node "expr" [Node "-" [termToTree t, exprToTree e]]
+exprToTree (ESum e t) = Node "expr" [Node "+" [exprToTree e, termToTree t]]
+exprToTree (EDif e t) = Node "expr" [Node "-" [exprToTree e, termToTree t]]
 
 termToTree :: Term -> Tree String
 termToTree (TFactor f) = Node "term" [factorToTree f]
-termToTree (TMul f t) = Node "term" [Node "*" [factorToTree f, termToTree t]]
-termToTree (TDiv f t) = Node "term" [Node "/" [factorToTree f, termToTree t]]
+termToTree (TMul t f) = Node "term" [Node "*" [termToTree t, factorToTree f]]
+termToTree (TDiv t f) = Node "term" [Node "/" [termToTree t, factorToTree f]]
 
 factorToTree :: Factor -> Tree String
 factorToTree (FExp e) = Node "factor" [exponentToTree e]
@@ -220,5 +233,24 @@ factorToTree (FExpo e f) = Node "factor" [Node "^" [exponentToTree e, factorToTr
 exponentToTree :: Exponent -> Tree String
 exponentToTree (Num n) = Node "exp" [Node (show n) []]
 exponentToTree (EExpr e) = Node "exp" [exprToTree e]
+
+
+exprToTree' :: Expr -> Tree String
+exprToTree' (ETerm t) = termToTree' t
+exprToTree' (ESum e t) = Node "+" [exprToTree' e, termToTree' t]
+exprToTree' (EDif e t) = Node "-" [exprToTree' e, termToTree' t]
+
+termToTree' :: Term -> Tree String
+termToTree' (TFactor f) = factorToTree' f
+termToTree' (TMul t f) = Node "*" [termToTree' t, factorToTree' f]
+termToTree' (TDiv t f) = Node "/" [termToTree' t, factorToTree' f]
+
+factorToTree' :: Factor -> Tree String
+factorToTree' (FExp e) = exponentToTree' e
+factorToTree' (FExpo e f) = Node "^" [exponentToTree' e, factorToTree' f]
+
+exponentToTree' :: Exponent -> Tree String
+exponentToTree' (Num n) = Node (show n) []
+exponentToTree' (EExpr e) = exprToTree' e
 
 
